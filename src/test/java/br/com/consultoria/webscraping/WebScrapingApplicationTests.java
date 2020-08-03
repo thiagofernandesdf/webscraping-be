@@ -1,5 +1,10 @@
 package br.com.consultoria.webscraping;
 
+import br.com.consultoria.webscraping.business.ScrapingService;
+import br.com.consultoria.webscraping.model.Filter;
+import br.com.consultoria.webscraping.model.Imovel;
+import br.com.consultoria.webscraping.repositoty.ImovelDAO;
+import br.com.consultoria.webscraping.repositoty.ImovelDAO1;
 import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.html.*;
 import org.jsoup.Connection;
@@ -10,6 +15,7 @@ import org.jsoup.select.Elements;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
@@ -21,6 +27,36 @@ import java.util.Map;
 class WebScrapingApplicationTests {
 
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+	@Autowired
+	private ScrapingService service;
+
+	@Autowired
+	private ImovelDAO imovelDAO;
+
+	@Autowired
+	private ImovelDAO1 imovelDAO1;
+
+	@Test
+	void testes() {
+
+		Imovel imovel = new Imovel();
+		//imovel.setEndereco("sqsw");
+		imovel.setVagas(2);
+
+		List<Imovel> l = imovelDAO1.get(imovel, 1, 10);
+
+
+	}
+
+	@Test
+	void call() throws IOException {
+
+		Filter filter = new Filter("VENDA", "APARTAMENTO", "DF","BRASILIA","SUDOESTE","4+");
+		//Filter filter = new Filter("VENDA", "IMOVEIS", "DF","TODOS","","");
+
+		service.createScrapeFilter(filter);
+	}
 
 	@Test
 	void tester() throws IOException {
@@ -346,7 +382,7 @@ System.out.println("1" + elements);
 
 		try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
 
-			webClient.addRequestHeader("Referer", "https://www.dfimoveis.com.br/");
+				//webClient.addRequestHeader("Referer", "https://www.dfimoveis.com.br/");
 
 			WebRequest requestSettings = new WebRequest(
 					new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
@@ -375,38 +411,241 @@ System.out.println("1" + elements);
 			selectEstado.setSelectedAttribute(optionEstado, true);
 
 			HtmlSelect selectCidade =(HtmlSelect) page1.getHtmlElementById("cidades");
-			HtmlOption optionCidade = selectCidade.getOptionByValue("BRASILIA");
+			HtmlOption optionCidade = selectCidade.getOptionByValue("GAMA");
 			selectCidade.setSelectedAttribute(optionCidade, true);
 
 			HtmlSelect selectBairro = (HtmlSelect)page1.getHtmlElementById("bairros");
-			HtmlOption optionBairro = selectBairro.getOptionByValue("SUDOESTE");
+			HtmlOption optionBairro = selectBairro.getOptionByValue("");
 			selectBairro.setSelectedAttribute(optionBairro, true);
 
 			HtmlSelect selectQuarto = (HtmlSelect)page1.getHtmlElementById("quartos");
-			HtmlOption optionQuarto = selectQuarto.getOptionByValue("4+");
+			HtmlOption optionQuarto = selectQuarto.getOptionByValue("2");
 			selectQuarto.setSelectedAttribute(optionQuarto, true);
 
 			HtmlPage page2 = dom.click();
-			webClient.waitForBackgroundJavaScript(1000);
+
+			webClient.waitForBackgroundJavaScript(1000 * 4);
 
 			DomElement div = page2.getElementById("resultadoDaBuscaDeImoveis");
 			DomNodeList<HtmlElement> lista = div.getElementsByTagName("ul");
 
+			//final HtmlDivision divsss = (HtmlDivision) page1.getByXPath("//div[@class='property__info-content']").get(0);
+
+
+			final DomNode div2 = page2.querySelector("div#container");
+
+			log.info("--> " + div2);
+
+			//HtmlUnorderedList ul =
+
 			lista.forEach(a -> {
 				int i = 0;
-				for(DomNode dn : a.getElementsByTagName("li")) {
-					//log.info("---------------> "+ i	);
-					log.info("---------------> "+ dn.getVisibleText());
-					log.info("---------------> "+ dn.getLocalName());
-					log.info("---------------> "+ dn.getChildren());
+				for(DomElement dn : a.getElementsByTagName("li")) {
 
+					for(DomElement dom1 : dn.getChildElements()) {
+
+						if(dom1.getNodeName().equals("div")){
+
+							for(DomElement htmlDiv : dom1.getElementsByTagName("div")) {
+
+								HtmlDivision ah = (HtmlDivision ) htmlDiv;
+
+								if(ah.getAttribute("class").equals("property__info")) {
+
+									for (DomElement de : ah.getElementsByTagName("div")) {
+
+										if (de.getAttribute("class").equals("property__info-content")) {
+
+											for (DomElement de1 : de.getElementsByTagName("div")) {
+
+												if (de1.getAttribute("class").equals("property__info-content")) {
+													log.info("--> " + de1);
+												}
+											}
+
+
+										}
+									}
+								}
+							}
+
+						}
+
+
+					}
+
+					//log.info("---------------> "+ i	);
+					//log.info("---------------> "+ dn.getVisibleText());
+					//log.info("---------------> "+ dn.getLocalName());
+					//log.info("---------------> "+ dn.getChildren());
+					//print(dn);
 					i++;
 				}
 			});
-
+/*
 			HtmlAnchor htmlAnchor = page2.getAnchorByHref("?pagina=4");
 			HtmlPage page3 = htmlAnchor.click();
 			log.info(page3.asText());
+
+ */
 		}
 	}
+
+
+	void print(DomElement de) {
+
+		for(DomElement d : de.getElementsByTagName("div")) {
+
+			log.info("classe ----------> " + d.getAttribute("class"));
+
+			// && d.getAttribute("class").equals("property__info-content")
+			if(d.getTagName().equals("div")) {
+				log.info(de.getTagName());
+				log.info(de.getNodeValue());
+				log.info(" --> "+ de.getChildElements());
+			}
+
+		}
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+	@Test
+	public void agoraVai() throws Exception {
+
+		try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
+
+			//webClient.addRequestHeader("Referer", "https://www.dfimoveis.com.br/");
+
+			WebRequest requestSettings = new WebRequest(
+					new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
+
+			webClient.getOptions().setThrowExceptionOnScriptError(false);
+			webClient.getOptions().setCssEnabled(true);
+			webClient.getCookieManager().setCookiesEnabled(true);
+			webClient.getOptions().setRedirectEnabled(true);
+			webClient.getOptions().setJavaScriptEnabled(true);
+			webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+
+			final HtmlPage page1 = webClient.getPage(requestSettings);
+
+			HtmlButton dom = page1.getHtmlElementById("botaoDeBusca");
+
+			HtmlSelect select = (HtmlSelect) page1.getHtmlElementById("negocios");
+			HtmlOption optionNegocios = select.getOptionByValue("VENDA");
+			select.setSelectedAttribute(optionNegocios, true);
+
+			HtmlSelect selectTipo = (HtmlSelect) page1.getHtmlElementById("tipos");
+			HtmlOption optionTipo = selectTipo.getOptionByValue("APARTAMENTO");
+			selectTipo.setSelectedAttribute(optionTipo, true);
+
+			HtmlSelect selectEstado = (HtmlSelect) page1.getHtmlElementById("estados");
+			HtmlOption optionEstado = selectEstado.getOptionByValue("DF");
+			selectEstado.setSelectedAttribute(optionEstado, true);
+
+			HtmlSelect selectCidade = (HtmlSelect) page1.getHtmlElementById("cidades");
+			HtmlOption optionCidade = selectCidade.getOptionByValue("BRASILIA");
+			selectCidade.setSelectedAttribute(optionCidade, true);
+
+			HtmlSelect selectBairro = (HtmlSelect) page1.getHtmlElementById("bairros");
+			HtmlOption optionBairro = selectBairro.getOptionByValue("SUDOESTE");
+			selectBairro.setSelectedAttribute(optionBairro, true);
+
+			HtmlSelect selectQuarto = (HtmlSelect) page1.getHtmlElementById("quartos");
+			HtmlOption optionQuarto = selectQuarto.getOptionByValue("4+");
+			selectQuarto.setSelectedAttribute(optionQuarto, true);
+
+			HtmlPage page2 = dom.click();
+
+			webClient.waitForBackgroundJavaScript(1000 * 4);
+
+
+			DomElement ul = page2.getElementById("resultadoDaBuscaDeImoveis");
+
+			List<HtmlElement> divList = ul.getElementsByTagName("div");
+
+			for(HtmlElement div : divList) {
+
+				if(div.getAttribute("class").equals("property__info-content")) {
+
+
+					String info = div.getVisibleText();
+
+					String [] infoArray = info.split("\\r?\\n");
+
+					log.info(infoArray[0]);
+					log.info(infoArray[1]);
+					log.info(infoArray[2]);
+					log.info(infoArray[3]);
+					log.info(infoArray[4]);
+					//log.info(infoArray[5]);
+
+					HtmlPage p = div.click();
+					webClient.waitForBackgroundJavaScript(1000 * 4);
+
+					log.info("-----------"+p.getTitleText());
+
+
+
+					List<HtmlElement> divPhoneList = p.getBody().getElementsByTagName("span");
+
+					for(HtmlElement divPhone : divPhoneList) {
+
+						if(divPhone.getAttribute("data-mask").equals("(00) 0000")) {
+							log.info("----- PHONE -----> "+divPhone.getVisibleText());
+						}
+
+						if(divPhone.getAttribute("class").equals("more btn-ver-telefone ligueAgoraPeloAnunciante btn btn-enviar-email gtm-ver-telefone")){
+
+							HtmlPage p2 = divPhone.click();
+							webClient.waitForBackgroundJavaScript(1000 * 3);
+
+							//log.info("---------> "+divPhone.getVisibleText());
+
+							List<HtmlElement> divPhone2 = p2.getBody().getElementsByTagName("span");
+
+							for(HtmlElement hideElements : divPhone2) {
+								if(hideElements.getAttribute("class").equals("complete")) {
+									log.info("------");
+									log.info("---------------------------> " + hideElements.getVisibleText());
+									log.info("toString: "+hideElements.toString());
+									log.info("value: "+hideElements.getNodeValue());
+									log.info("tag name: "+hideElements.getTagName());
+									log.info("node name: "+hideElements.getNodeName());
+									break;
+								}
+							}
+
+
+
+
+							break;
+						}
+					}
+
+
+
+				}
+
+			}
+
+
+
+
+
+		}
+	}
+
+
 }
+
