@@ -25,6 +25,7 @@ public class WebScrapingController {
     @Autowired
     private ImovelDAO1 dao;
 
+    @CrossOrigin
     @PostMapping(value = "/list", consumes = "application/json", produces = "application/json")
     @ResponseBody
     public Output list(@RequestBody Input input) {

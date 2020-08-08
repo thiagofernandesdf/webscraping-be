@@ -75,12 +75,9 @@ public class ImovelDAO1 {
 
         this.count = em.createQuery(cqCount).getSingleResult();
 
-
         cq.where(predicates.toArray(new Predicate[0]));
 
-
         CriteriaQuery<Imovel> select = cq.select(from);
-
 
         TypedQuery<Imovel> typedQuery = em.createQuery(select);
 
@@ -88,7 +85,6 @@ public class ImovelDAO1 {
         typedQuery.setMaxResults(sizePage);
 
         select.orderBy(cb.asc(from.get("id")));
-
 
         return typedQuery.getResultList();
     }
