@@ -3,6 +3,7 @@ package br.com.consultoria.webscraping.model;
 import java.io.Serializable;
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.util.Date;
 
 
 /**
@@ -41,6 +42,9 @@ public class Imovel implements Serializable {
 
 	private BigDecimal valor;
 
+	@Column(name="data_criacao")
+	private Date dataCriacao;
+
 	@Column(name = "area_util")
 	private Integer areaUtil;
 
@@ -70,6 +74,7 @@ public class Imovel implements Serializable {
 
 	public void setValorMetro(BigDecimal valorMetro) {
 		this.valorMetro = valorMetro;
+		this.valorMetro.setScale(2);
 	}
 
 	public Integer getCep() {
@@ -149,7 +154,9 @@ public class Imovel implements Serializable {
 	}
 
 	public void setValor(BigDecimal valor) {
+
 		this.valor = valor;
+		this.valor.setScale(2);
 	}
 
 	public CriteriosBusca getCriteriosBusca() {
@@ -180,6 +187,14 @@ public class Imovel implements Serializable {
 		this.suites = suites;
 	}
 
+	public Date getDataCriacao() {
+		return dataCriacao;
+	}
+
+	public void setDataCriacao(Date dataCriacao) {
+		this.dataCriacao = dataCriacao;
+	}
+
 	@Override
 	public String toString() {
 		return "Imovel{" +
@@ -195,6 +210,7 @@ public class Imovel implements Serializable {
 				", telefone='" + telefone + '\'' +
 				", vagas=" + vagas +
 				", valor=" + valor +
+				", dataCriacao=" + dataCriacao +
 				", areaUtil=" + areaUtil +
 				", suites=" + suites +
 				", criteriosBusca=" + criteriosBusca +

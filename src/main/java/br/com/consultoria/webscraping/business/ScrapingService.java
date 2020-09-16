@@ -1,5 +1,7 @@
 package br.com.consultoria.webscraping.business;
 
+import br.com.consultoria.webscraping.model.Combo;
+import br.com.consultoria.webscraping.model.DFIMoveisFilter;
 import br.com.consultoria.webscraping.model.Filter;
 import br.com.consultoria.webscraping.model.Imovel;
 import br.com.consultoria.webscraping.repositoty.ImovelRepository;
@@ -27,67 +29,129 @@ public class ScrapingService {
     private ImovelRepository repository;
 
 
+
     public void createScrapeFilter(Filter filter) throws IOException {
+
+        this.imovels = new ArrayList<>();
 
         try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
 
-            WebRequest requestSettings = new WebRequest(
-                    new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
+            try {
+                WebRequest requestSettings = new WebRequest(
+                        new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
 
-            webClient.getOptions().setThrowExceptionOnScriptError(false);
-            webClient.getOptions().setCssEnabled(true);
-            webClient.getCookieManager().setCookiesEnabled(true);
-            webClient.getOptions().setRedirectEnabled(true);
-            webClient.getOptions().setJavaScriptEnabled(true);
-            webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+                webClient.getOptions().setThrowExceptionOnScriptError(false);
+                webClient.getOptions().setCssEnabled(true);
+                webClient.getCookieManager().setCookiesEnabled(true);
+                webClient.getOptions().setRedirectEnabled(true);
+                webClient.getOptions().setJavaScriptEnabled(true);
+                webClient.setAjaxController(new NicelyResynchronizingAjaxController());
 
-            final HtmlPage page1 = webClient.getPage(requestSettings);
 
-            HtmlButton dom = page1.getHtmlElementById("botaoDeBusca");
+                final HtmlPage page1 = webClient.getPage(requestSettings);
 
-            HtmlSelect select = (HtmlSelect) page1.getHtmlElementById("negocios");
-            HtmlOption optionNegocios = select.getOptionByValue(filter.getNegocio());
-            select.setSelectedAttribute(optionNegocios, true);
+                HtmlButton dom = page1.getHtmlElementById("botaoDeBusca");
 
-            HtmlSelect selectTipo = (HtmlSelect) page1.getHtmlElementById("tipos");
-            HtmlOption optionTipo = selectTipo.getOptionByValue(filter.getTipo());
-            selectTipo.setSelectedAttribute(optionTipo, true);
+                HtmlSelect select = (HtmlSelect) page1.getHtmlElementById("negocios");
+                HtmlOption optionNegocios = select.getOptionByValue(filter.getNegocio());
+                select.setSelectedAttribute(optionNegocios, true);
 
-            HtmlSelect selectEstado = (HtmlSelect) page1.getHtmlElementById("estados");
-            HtmlOption optionEstado = selectEstado.getOptionByValue(filter.getEstado());
-            selectEstado.setSelectedAttribute(optionEstado, true);
+                if(!filter.getTipo().equals("")) {
+                    HtmlSelect selectTipo = (HtmlSelect) page1.getHtmlElementById("tipos");
+                    HtmlOption optionTipo = selectTipo.getOptionByValue(filter.getTipo());
+                    selectTipo.setSelectedAttribute(optionTipo, true);
+                }
 
-            HtmlSelect selectCidade = (HtmlSelect) page1.getHtmlElementById("cidades");
-            HtmlOption optionCidade = selectCidade.getOptionByValue(filter.getCidade());
-            selectCidade.setSelectedAttribute(optionCidade, true);
+                if(!filter.getEstado().equals("")) {
+                    HtmlSelect selectEstado = (HtmlSelect) page1.getHtmlElementById("estados");
+                    HtmlOption optionEstado = selectEstado.getOptionByValue(filter.getEstado());
+                    selectEstado.setSelectedAttribute(optionEstado, true);
+                }
 
-            HtmlSelect selectBairro = (HtmlSelect) page1.getHtmlElementById("bairros");
-            HtmlOption optionBairro = selectBairro.getOptionByValue(filter.getBairro());
-            selectBairro.setSelectedAttribute(optionBairro, true);
+                if(!filter.getCidade().equals("")) {
+                    HtmlSelect selectCidade = (HtmlSelect) page1.getHtmlElementById("cidades");
+                    HtmlOption optionCidade = selectCidade.getOptionByValue(filter.getCidade());
+                    selectCidade.setSelectedAttribute(optionCidade, true);
+                }
 
-            HtmlSelect selectQuarto = (HtmlSelect) page1.getHtmlElementById("quartos");
-            HtmlOption optionQuarto = selectQuarto.getOptionByValue(filter.getQuartos());
-            selectQuarto.setSelectedAttribute(optionQuarto, true);
+                if(!filter.getBairro().equals("")) {
+                    HtmlSelect selectBairro = (HtmlSelect) page1.getHtmlElementById("bairros");
+                    HtmlOption optionBairro = selectBairro.getOptionByValue(filter.getBairro());
+                    selectBairro.setSelectedAttribute(optionBairro, true);
+                }
 
-            webClient.waitForBackgroundJavaScript(1000 * 4);
+                if(!filter.getQuartos().equals("")) {
+                    HtmlSelect selectQuarto = (HtmlSelect) page1.getHtmlElementById("quartos");
+                    HtmlOption optionQuarto = selectQuarto.getOptionByValue(filter.getQuartos());
+                    selectQuarto.setSelectedAttribute(optionQuarto, true);
+                }
 
-            HtmlPage page2 = dom.click();
+                //webClient.waitForBackgroundJavaScript(1000 * 5);
 
-            toScrape(page2, webClient);
+                HtmlPage page2 = dom.click();
+
+
+                toScrape(page2, webClient, 1);
+                int pageNumber = 2;
+                //webClient.close();
+                boolean hasNext = true;
+
+
+                while (hasNext) {
+                    try {
+                        HtmlAnchor htmlAnchor = page2.getAnchorByHref("?pagina=" + Integer.toString(pageNumber));
+                        HtmlPage page3 = htmlAnchor.click();
+
+                        toScrape(page3, webClient, pageNumber);
+                        pageNumber++;
+
+                        final List<WebWindow> windows = webClient.getWebWindows();
+
+                        for (final WebWindow wd : windows) {
+
+                            wd.getJobManager().removeAllJobs();
+
+                        }
+
+                        //webClient.close();
+
+                        System.gc();
+                    } catch(ElementNotFoundException enfe){
+                        page2.cleanUp();
+                        page2.remove();
+                        log.error(enfe.getMessage());
+                        hasNext = false;
+                    }
+
+                }
+                webClient.close();
+
+                for (WebWindow window : webClient.getWebWindows()) {
+                    window.getJobManager().removeAllJobs();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (FailingHttpStatusCodeException e) {
+                e.printStackTrace();
+            } catch (ElementNotFoundException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
 
     }
 
-    private void toScrape(HtmlPage page, WebClient webClient) throws IOException {
+    private void toScrape(HtmlPage page, WebClient webClient, int pageNumber) throws IOException {
+
+        log.info("Página: " + pageNumber);
 
         DomElement ul = page.getElementById("resultadoDaBuscaDeImoveis");
-
-        List<Imovel> imoveis = new ArrayList<>();
 
         List<HtmlElement> divList = ul.getElementsByTagName("div");
 
         for(HtmlElement div : divList) {
-
 
             if(div.getAttribute("class").equals("property__info-content")) {
 
@@ -106,28 +170,52 @@ public class ScrapingService {
                 log.info(infoArray[5]); //suites
                 log.info(infoArray[6]); //vagas
 */
-                configEntity(infoArray, imovel);
+                try {
+                    configEntity(infoArray, imovel);
+                } catch (Exception ioe) {
+                    log.error("Nao foi possivel extrair dados.", ioe);
+                    continue;
+                }
+
                 String phone = "";
 
                 HtmlPage p = div.click();
-                webClient.waitForBackgroundJavaScript(1000 * 4);
+                //webClient.waitForBackgroundJavaScript(1000 * 3);
+                imovel.setLink(p.getUrl().toString());
 
                 log.info("-----------"+p.getTitleText());
 
 
 
-                List<HtmlElement> divPhoneList = p.getBody().getElementsByTagName("span");
+                List<HtmlElement> botoes = p.getBody().getElementsByTagName("button");
 
-                for(HtmlElement divPhone : divPhoneList) {
+                for(HtmlElement botao : botoes) {
 
-                    if(divPhone.getAttribute("data-mask").equals("(00) 0000")) {
-                        phone = divPhone.getVisibleText();
+                    if(botao.getAttribute("class").equals("gtm-ver-telefone abrirTelefone btn btn-ligar-agora btn-relacionamentos")) {
+                        HtmlPage paginaTelefone = botao.click();
+                        //webClient.waitForBackgroundJavaScript(1000 * 3);
+                        List<HtmlElement> spanList = paginaTelefone.getBody().getElementsByTagName("span");
+
+
+                        for(HtmlElement span : spanList) {
+                            log.warn("----> " + span.getAttribute("class"));
+                            if(span.getAttribute("data-mask").equals("(00) 00000")) {
+                                log.warn(span.getVisibleText());
+                                phone += span.getVisibleText();
+                            }
+                            if(span.getAttribute("class").equals("complete")) {
+                                phone += span.getVisibleText();
+                                log.warn(span.getVisibleText());
+                            }
+                        }
+
+                        break;
                     }
-
+                    /*
                     if(divPhone.getAttribute("class").equals("more btn-ver-telefone ligueAgoraPeloAnunciante btn btn-enviar-email gtm-ver-telefone")){
 
                         HtmlPage p2 = divPhone.click();
-                        webClient.waitForBackgroundJavaScript(1000 * 4);
+                        webClient.waitForBackgroundJavaScript(1000 * 2);
 
                         //log.info("---------> "+divPhone.getVisibleText());
 
@@ -145,18 +233,23 @@ public class ScrapingService {
                                 break;
                             }
                         }
-
+                        //p2.cleanUp();
+                        //p2.remove();
                         break;
-                    }
+                    } */
+
                 }
+                //p.cleanUp();
 
                 imovel.setTelefone(phone);
 
                 repository.save(imovel);
-                //imoveis.add(imovel);
+                imovels.add(imovel);
+
             }
+
+
         }
-        this.setImovels(imoveis);
     }
 
     /*
@@ -179,7 +272,7 @@ public class ScrapingService {
 2020-07-20 17:36:54 - 3 Suítes
 2020-07-20 17:36:56 - 2 Vagas
  */
-    private void configEntity(String [] infoArray, Imovel imovel) {
+    private void configEntity(String [] infoArray, Imovel imovel) throws IOException{
 
         int i = 0;
 
@@ -260,4 +353,33 @@ public class ScrapingService {
     public void setImovels(List<Imovel> imovels) {
         this.imovels = imovels;
     }
+
+    public List<Combo> getCombosNegocio() throws IOException {
+
+        List<Combo> comboNegocios = new ArrayList<>();
+
+        try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
+
+            WebRequest requestSettings = new WebRequest(
+                    new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
+
+            webClient.getOptions().setThrowExceptionOnScriptError(false);
+            webClient.getOptions().setCssEnabled(true);
+            webClient.getCookieManager().setCookiesEnabled(true);
+            webClient.getOptions().setRedirectEnabled(true);
+            webClient.getOptions().setJavaScriptEnabled(true);
+            webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+
+            final HtmlPage page1 = webClient.getPage(requestSettings);
+
+            HtmlSelect selectNegocio = (HtmlSelect) page1.getElementById("negocios");
+
+            selectNegocio.getOptions().forEach(o ->
+                    comboNegocios.add(new Combo(o.getVisibleText(), o.getText()))
+            );
+        }
+
+        return comboNegocios;
+    }
+
 }

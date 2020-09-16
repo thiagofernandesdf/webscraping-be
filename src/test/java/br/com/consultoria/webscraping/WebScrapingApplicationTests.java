@@ -1,6 +1,9 @@
 package br.com.consultoria.webscraping;
 
+import br.com.consultoria.webscraping.business.ComboBusiness;
 import br.com.consultoria.webscraping.business.ScrapingService;
+import br.com.consultoria.webscraping.model.Combo;
+import br.com.consultoria.webscraping.model.DFIMoveisFilter;
 import br.com.consultoria.webscraping.model.Filter;
 import br.com.consultoria.webscraping.model.Imovel;
 import br.com.consultoria.webscraping.repositoty.ImovelDAO;
@@ -18,12 +21,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.annotation.Resource;
+import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-@SpringBootTest
+//@SpringBootTest
 class WebScrapingApplicationTests {
 
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -37,7 +42,52 @@ class WebScrapingApplicationTests {
 	@Autowired
 	private ImovelDAO1 imovelDAO1;
 
+	@Resource(name = "sessionScopedBean")
+	private ComboBusiness comboBusiness;
+
 	@Test
+	void combos() throws IOException {
+		DFIMoveisFilter filter = new DFIMoveisFilter();
+		filter.setNegocio(new Combo("LANCAMENTO","LANCAMENTO"));
+
+
+		comboBusiness.changeCombo(filter);
+		//comboBusiness.getComboTipos().forEach(cf -> System.out.println(cf.getName()));
+
+	}
+
+	//@Test
+	public void getCombosNegocio() throws IOException {
+
+		try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
+
+			WebRequest requestSettings = new WebRequest(
+					new URL("https://www.dfimoveis.com.br/"), HttpMethod.GET);
+
+			webClient.getOptions().setThrowExceptionOnScriptError(false);
+			webClient.getOptions().setCssEnabled(true);
+			webClient.getCookieManager().setCookiesEnabled(true);
+			webClient.getOptions().setRedirectEnabled(true);
+			webClient.getOptions().setJavaScriptEnabled(true);
+			webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+
+			final HtmlPage page1 = webClient.getPage(requestSettings);
+
+			HtmlSelect selectNegocio = (HtmlSelect) page1.getElementById("negocios");
+
+			selectNegocio.getOptions().forEach(o ->
+					print1(o)
+			);
+
+		}
+	}
+
+	void print1(HtmlOption option) {
+		log.info(option.getText());
+		log.info(option.getVisibleText());
+	}
+
+	//@Test
 	void testes() {
 
 		Imovel imovel = new Imovel();
@@ -49,16 +99,16 @@ class WebScrapingApplicationTests {
 
 	}
 
-	@Test
+	//@Test
 	void call() throws IOException {
 
 		Filter filter = new Filter("VENDA", "APARTAMENTO", "DF","BRASILIA","SUDOESTE","4+");
 		//Filter filter = new Filter("VENDA", "IMOVEIS", "DF","TODOS","","");
 
-		service.createScrapeFilter(filter);
+		//service.createScrapeFilter(filter);
 	}
 
-	@Test
+	//@Test
 	void tester() throws IOException {
 
 		Document doc = Jsoup.connect("https://en.wikipedia.org/").get();
@@ -74,7 +124,7 @@ class WebScrapingApplicationTests {
 
 	}
 
-	@Test
+	//@Test
 	void whenReturnTitle() throws IOException {
 
 		Document doc = Jsoup.connect("https://www.dfimoveis.com.br/").get();
@@ -92,7 +142,7 @@ System.out.println("1" + elements);
 */
 	}
 
-	@Test
+	//@Test
 	void whenSubmit() throws IOException {
 
 		Connection.Response response =
@@ -126,13 +176,13 @@ System.out.println("1" + elements);
 
 	}
 
-	@Test
+	//@Test
 	void tested1(){
 		log.info("oiiiiiiiiii");
 	}
 
 
-	@Test
+	//@Test
 	public void submittingFormDFImoveis() throws Exception {
 
 		try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
@@ -271,7 +321,7 @@ System.out.println("1" + elements);
 
 
 
-	@Test
+	//@Test
 	public void submittingForm1() throws Exception {
 
 
@@ -351,7 +401,7 @@ System.out.println("1" + elements);
 
 
 
-	@Test
+	//@Test
 	public void submittingForm3() throws Exception {
 
 		try (final WebClient webClient = new WebClient()) {
@@ -377,7 +427,7 @@ System.out.println("1" + elements);
 
 
 
-	@Test
+	//@Test
 	public void submittingFormDFImoveisClean() throws Exception {
 
 		try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {

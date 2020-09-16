@@ -20,4 +20,9 @@ public interface ImovelRepository extends JpaRepository<Imovel, Long> , JpaSpeci
     @Query("FROM Imovel i WHERE LOWER(i.endereco) like %:endereco% ")
     Page<Imovel> buscarPorEndereco(@Param("endereco") String endereco, Pageable pageable);
 
+    //@Query("FROM Imovel i WHERE i.link = :link ")
+    //Page<Imovel> searchByLink(@Param("link") String link, Pageable pageable);
+    @Query("FROM Imovel i WHERE i.link = :link ")
+    Imovel searchByLink(@Param("link") String link);
+
 }

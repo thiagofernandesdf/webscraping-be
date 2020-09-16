@@ -1,10 +1,12 @@
 package br.com.consultoria.webscraping.repositoty;
 
 import br.com.consultoria.webscraping.model.Imovel;
+import org.hibernate.Criteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -43,7 +45,11 @@ public class ImovelDAO1 {
         }
 
         if (imovel.getValorMetro() != null) {
-            predicates.add(cb.ge(from.get("valor_metro"), imovel.getValorMetro()));
+            predicates.add(cb.ge(from.get("valorMetro"), imovel.getValorMetro()));
+        }
+
+        if (imovel.getValor() != null) {
+            predicates.add(cb.ge(from.get("valor"), imovel.getValor()));
         }
 
         if (imovel.getElevador() != null) {
@@ -60,11 +66,11 @@ public class ImovelDAO1 {
 
         if (imovel.getQuartos() != null) {
 
-            if (imovel.getQuartos() >= 4) {
-                predicates.add(cb.ge(from.get("quartos"), 4));
-            } else {
-                predicates.add(cb.ge(from.get("quartos"), imovel.getQuartos()));
-            }
+            //if (imovel.getQuartos() >= 4) {
+              //  predicates.add(cb.ge(from.get("quartos"), 4));
+            //} else {
+                predicates.add(cb.equal(from.get("quartos"), imovel.getQuartos()));
+            //}
         }
 
         CriteriaQuery<Long> cqCount = cb.createQuery(Long.class);
@@ -87,6 +93,22 @@ public class ImovelDAO1 {
         select.orderBy(cb.asc(from.get("id")));
 
         return typedQuery.getResultList();
+    }
+
+       public Imovel ImovelfindByLink(String link) {
+
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Imovel> cq = cb.createQuery(Imovel.class);
+
+        Root<Imovel> book = cq.from(Imovel.class);
+
+        Predicate authorNamePredicate = cb.equal(book.get("link"), link);
+
+        cq.where(authorNamePredicate);
+
+        TypedQuery<Imovel> query = em.createQuery(cq);
+
+        return query.getSingleResult();
     }
 
     public long getCount() {
